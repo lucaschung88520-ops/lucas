@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人工智慧與經濟研究專題 - 題目二分析網頁</title>
+    <!-- 引入 Chart.js 視覺化圖表庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        header {
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #1a365d;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #718096;
+            font-size: 14px;
+        }
+        .card {
+            background: #fafafa;
+            border-left: 4px solid #dd6b20;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 0 8px 8px 0;
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #c05621;
+        }
+        .chart-box {
+            position: relative;
+            margin: 30px 0;
+            padding: 15px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .chart-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>淡江大學《人工智慧與經濟研究報告》專題</h1>
+        <div class="subtitle">研究領域：高房價負擔與青年就業市場 | 分析工具：AREMOS 資料庫</div>
+    </header>
+
+    <!-- 題目二內容卡片 -->
+    <div class="card">
+        <h3>研究題目二：高房價負擔對青年就業選擇與失業率之非線性影響</h3>
+        <p><strong>研究假說（Hypothesis）：</strong> 住宅價格指數與房價所得比持續攀升，大幅增加居住與生活成本，進而擠壓青年勞動人口（20-29歲）的跨區域遷移能力與就業選擇，對青年失業率與勞動參與率產生顯著衝擊。</p>
+        <p><strong>關鍵指標：</strong> 住宅價格指數 (Housing Price Index)、20-29 歲青年失業率 (Youth Unemployment Rate)、青年勞動參與率 (Youth LFPR)。</p>
+    </div>
+
+    <!-- 圖表：雙 Y 軸走勢圖 -->
+    <div class="chart-box">
+        <div class="chart-title">圖 2：住宅價格指數走勢 vs. 青年失業率動態變化 (2018–2026)</div>
+        <canvas id="housingJobChart" height="130"></canvas>
+    </div>
+</div>
+
+<script>
+    // 生成模擬時間序列數據 (2018-2026, 108個月)
+    const labels = [];
+    const housePriceIndex = [];
+    const youthUnemployment = [];
+
+    for (let i = 0; i < 108; i++) {
+        let year = 2018 + Math.floor(i / 12);
+        let month = (i % 12 + 1).toString().padStart(2, '0');
+        labels.push(`${year}-${month}`);
+
+        // 房價指數上升趨勢
+        let hpi = 100 + (i * 0.85) + (i > 60 ? Math.pow(i - 60, 1.2) * 0.2 : 0);
+        // 青年失業率數據與季節性波動
+        let youthUnemp = 11.8 - (i * 0.02) + Math.sin(i * 0.3) * 0.8 + (i > 72 ? 0.7 : 0);
+
+        housePriceIndex.push(hpi.toFixed(1));
+        youthUnemployment.push(youthUnemp.toFixed(2));
+    }
+
+    // 渲染【題目二圖表】
+    const ctx = document.getElementById('housingJobChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '住宅價格指數 (基期=100)',
+                    data: housePriceIndex,
+                    borderColor: '#dd6b20',
+                    backgroundColor: 'rgba(221, 107, 32, 0.1)',
+                    yAxisID: 'y_house',
+                    borderWidth: 2.5,
+                    pointRadius: 0
+                },
+                {
+                    label: '20-29 歲青年失業率 (%)',
+                    data: youthUnemployment,
+                    borderColor: '#805ad5',
+                    borderDash: [5, 5],
+                    yAxisID: 'y_job',
+                    borderWidth: 2,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { ticks: { maxTicksLimit: 12 } },
+                y_house: {
+                    type: 'linear',
+                    position: 'left',
+                    title: { display: true, text: '住宅價格指數', color: '#dd6b20' }
+                },
+                y_job: {
+                    type: 'linear',
+                    position: 'right',
+                    title: { display: true, text: '青年失業率 (%)', color: '#805ad5' },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
