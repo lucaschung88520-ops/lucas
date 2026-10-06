@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人工智慧與經濟研究專題 - 通膨薪資與房價青年就業分析</title>
+    <!-- 引入 Chart.js 視覺化圖表庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        header {
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #1a365d;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #718096;
+            font-size: 14px;
+        }
+        /* 頁籤切換按鈕樣式 */
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            background-color: #edf2f7;
+            color: #4a5568;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background-color: #3182ce;
+            color: white;
+            box-shadow: 0 2px 8px rgba(49, 130, 206, 0.4);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            background: #fafafa;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 0 8px 8px 0;
+        }
+        .card-topic1 {
+            border-left: 4px solid #3182ce;
+        }
+        .card-topic2 {
+            border-left: 4px solid #dd6b20;
+        }
+        .card h3 {
+            margin-top: 0;
+        }
+        .chart-box {
+            position: relative;
+            margin: 30px 0;
+            padding: 15px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .chart-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>淡江大學《人工智慧與經濟研究報告》專題</h1>
+        <div class="subtitle">研究領域：通貨膨脹與薪資結構 / 房價負擔與青年就業選擇 | 分析工具：AREMOS 資料庫</div>
+    </header>
+
+    <!-- 主題切換按鈕 -->
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab('topic1')">主題一：通貨膨脹與薪資</button>
+        <button class="tab-btn" onclick="switchTab('topic2')">主題二：房價指數與青年就業</button>
+    </div>
+
+    <!-- ================= 主題一：通貨膨脹與薪資 ================= -->
+    <div id="topic1" class="tab-content active">
+        <div class="card card-topic1">
+            <h3 style="color: #2b6cb0;">主題一：通貨膨脹動態對名目與實質薪資成長之影響分析</h3>
+            <p><strong>研究假說：</strong> 物價指數（CPI）成長率持續高於名目薪資成長率時，將導致實質薪資（Real Wage）呈現停滯或負成長，進而削弱民眾的實際購買力與消費信心。</p>
+            <p><strong>關鍵指標：</strong> 消費者物價指數 (CPI 年增率)、名目總薪資成長率 (Nominal Wage Growth)、實質薪資成長率 (Real Wage Growth)。</p>
+        </div>
+
+        <div class="chart-box">
+            <div class="chart-title">圖 1：CPI 通膨年增率 vs. 名目與實質薪資成長率走勢圖 (2018–2026)</div>
+            <canvas id="inflationWageChart" height="130"></canvas>
+        </div>
+    </div>
+
+    <!-- ================= 主題二：房價與青年就業 ================= -->
+    <div id="topic2" class="tab-content">
+        <div class="card card-topic2">
+            <h3 style="color: #c05621;">主題二：高房價負擔對青年就業選擇與失業率之非線性影響</h3>
+            <p><strong>研究假說：</strong> 住宅價格指數與房價所得比持續攀升，大幅增加青年生活成本，擠壓青年勞動人口的跨區域就業選擇，對 20-29 歲青年失業率產生顯著衝擊。</p>
+            <p><strong>關鍵指標：</strong> 住宅價格指數 (Housing Price Index)、20-29 歲青年失業率 (Youth Unemployment)。</p>
+        </div>
+
+        <div class="chart-box">
+            <div class="chart-title">圖 2：住宅價格指數走勢 vs. 青年失業率變化 (2018–2026)</div>
+            <canvas id="housingJobChart" height="130"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===== 切換頁籤邏輯 =====
+    function switchTab(topicId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(topicId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    // ===== 生成模擬數據 (2018-2026, 108個月) =====
+    const labels = [];
+    const cpiRates = [];
+    const nominalWageRates = [];
+    const realWageRates = [];
+    const housePriceIndex = [];
+    const youthUnemployment = [];
+
+    for (let i = 0; i < 108; i++) {
+        let year = 2018 + Math.floor(i / 12);
+        let month = (i % 12 + 1).toString().padStart(2, '0');
+        labels.push(`${year}-${month}`);
+
+        // 主題一：純通膨與薪資數據
+        let cpi = 1.2 + Math.sin(i * 0.15) * 0.7 + (i > 48 ? 1.6 : 0); // 近年通膨率上升
+        let nomWage = 1.8 + Math.cos(i * 0.1) * 0.4 + (i > 60 ? 0.8 : 0.3); // 名目薪資成長
+        let realWage = nomWage - cpi; // 實質薪資 = 名目 - 通膨
+
+        cpiRates.push(cpi.toFixed(2));
+        nominalWageRates.push(nomWage.toFixed(2));
+        realWageRates.push(realWage.toFixed(2));
+
+        // 主題二：房價與青年就業數據
+        let hpi = 100 + (i * 0.85) + (i > 60 ? Math.pow(i - 60, 1.2) * 0.2 : 0);
+        let youthUnemp = 11.8 - (i * 0.02) + Math.sin(i * 0.3) * 0.8 + (i > 72 ? 0.7 : 0);
+
+        housePriceIndex.push(hpi.toFixed(1));
+        youthUnemployment.push(youthUnemp.toFixed(2));
+    }
+
+    // ===== 渲染【主題一圖表】 =====
+    const ctx1 = document.getElementById('inflationWageChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'CPI 通膨年增率 (%)',
+                    data: cpiRates,
+                    borderColor: '#e53e3e',
+                    borderWidth: 2,
+                    pointRadius: 0
+                },
+                {
+                    label: '名目薪資成長率 (%)',
+                    data: nominalWageRates,
+                    borderColor: '#3182ce',
+                    borderWidth: 2,
+                    pointRadius: 0
+                },
+                {
+                    label: '實質薪資成長率 (%)',
+                    data: realWageRates,
+                    borderColor: '#38a169',
+                    backgroundColor: 'rgba(56, 161, 105, 0.15)',
+                    fill: true,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { ticks: { maxTicksLimit: 12 } },
+                y: { title: { display: true, text: '百分比 (%)' } }
+            }
+        }
+    });
+
+    // ===== 渲染【主題二圖表】 =====
+    const ctx2 = document.getElementById('housingJobChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '住宅價格指數 (基期=100)',
+                    data: housePriceIndex,
+                    borderColor: '#dd6b20',
+                    backgroundColor: 'rgba(221, 107, 32, 0.1)',
+                    yAxisID: 'y_house',
+                    borderWidth: 2.5,
+                    pointRadius: 0
+                },
+                {
+                    label: '20-29 歲青年失業率 (%)',
+                    data: youthUnemployment,
+                    borderColor: '#805ad5',
+                    borderDash: [5, 5],
+                    yAxisID: 'y_job',
+                    borderWidth: 2,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { ticks: { maxTicksLimit: 12 } },
+                y_house: {
+                    type: 'linear',
+                    position: 'left',
+                    title: { display: true, text: '住宅價格指數', color: '#dd6b20' }
+                },
+                y_job: {
+                    type: 'linear',
+                    position: 'right',
+                    title: { display: true, text: '青年失業率 (%)', color: '#805ad5' },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
