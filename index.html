@@ -1,0 +1,328 @@
+# ============================================================
+# 人工智慧與經濟研究
+# 題目：
+# 人工智慧與技術進步對台灣勞動生產力及薪資成長之影響
+#
+# 資料來源：AREMOS
+# 分析方法：
+# 1. CSV 資料清理
+# 2. 年增率計算
+# 3. 趨勢圖
+# 4. OLS 基本迴歸
+# 5. ADF 單根檢定
+# ============================================================
+
+
+# ------------------------------------------------------------
+# 1. 載入套件
+# ------------------------------------------------------------
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+from statsmodels.tsa.stattools import adfuller
+from pathlib import Path
+
+
+# ------------------------------------------------------------
+# 2. 讀取 AREMOS CSV
+# ------------------------------------------------------------
+
+FILE_PATH = Path("../data/raw/aremos_data.csv")
+
+df = pd.read_csv(
+    FILE_PATH,
+    encoding="utf-8-sig"
+)
+
+print("========== 原始資料 ==========")
+print(df.head())
+
+print("\n========== 欄位名稱 ==========")
+print(df.columns.tolist())
+
+
+# ------------------------------------------------------------
+# 3. 資料清理
+# ------------------------------------------------------------
+
+# 第一欄設定為日期
+date_column = df.columns[0]
+
+df[date_column] = pd.to_datetime(
+    df[date_column],
+    errors="coerce"
+)
+
+# 將第一欄重新命名為 Date
+df.rename(
+    columns={date_column: "Date"},
+    inplace=True
+)
+
+# 按日期排序
+df = df.sort_values("Date")
+
+# 將其他欄位轉成數值
+for col in df.columns:
+    if col != "Date":
+        df[col] = pd.to_numeric(
+            df[col],
+            errors="coerce"
+        )
+
+# 移除無法辨識日期的資料
+df = df.dropna(subset=["Date"])
+
+# 設定 Date 為索引
+df = df.set_index("Date")
+
+
+# ------------------------------------------------------------
+# 4. 檢查缺失值
+# ------------------------------------------------------------
+
+print("\n========== 缺失值 ==========")
+print(df.isnull().sum())
+
+
+# ------------------------------------------------------------
+# 5. 處理缺失值
+# ------------------------------------------------------------
+
+# 時間序列資料使用線性插值
+df = df.interpolate(method="linear")
+
+# 刪除仍然存在的缺失值
+df = df.dropna()
+
+print("\n========== 清理後資料 ==========")
+print(df.head())
+
+print("\n========== 清理後資料筆數 ==========")
+print(len(df))
+
+
+# ============================================================
+# 6. 請確認你的 AREMOS 欄位名稱
+# ============================================================
+
+# 下面三個名稱需要依照你的 CSV 實際欄位名稱修改
+#
+# 建議：
+# Productivity = 勞動生產力
+# Wage = 受僱員工薪資
+# Industrial = 工業生產指數
+
+PRODUCTIVITY = "Productivity"
+WAGE = "Wage"
+INDUSTRIAL = "Industrial"
+
+
+# ============================================================
+# 7. 計算年增率
+# ============================================================
+
+# 如果 AREMOS 資料是「月資料」
+# 12 代表與去年同月相比
+
+df["Productivity_YoY"] = (
+    df[PRODUCTIVITY].pct_change(12) * 100
+)
+
+df["Wage_YoY"] = (
+    df[WAGE].pct_change(12) * 100
+)
+
+df["Industrial_YoY"] = (
+    df[INDUSTRIAL].pct_change(12) * 100
+)
+
+
+# 移除因計算年增率而產生的缺失值
+
+df = df.dropna()
+
+
+# ============================================================
+# 8. 查看年增率
+# ============================================================
+
+print("\n========== 年增率資料 ==========")
+
+print(
+    df[
+        [
+            "Productivity_YoY",
+            "Wage_YoY",
+            "Industrial_YoY"
+        ]
+    ].head()
+)
+
+
+# ============================================================
+# 9. 趨勢圖：勞動生產力與薪資
+# ============================================================
+
+plt.figure(figsize=(12, 6))
+
+plt.plot(
+    df.index,
+    df["Productivity_YoY"],
+    label="Labor Productivity Growth"
+)
+
+plt.plot(
+    df.index,
+    df["Wage_YoY"],
+    label="Wage Growth"
+)
+
+plt.axhline(
+    y=0,
+    linestyle="--"
+)
+
+plt.title(
+    "Taiwan Labor Productivity and Wage Growth"
+)
+
+plt.xlabel("Date")
+plt.ylabel("Year-over-Year Growth (%)")
+
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+
+plt.show()
+
+
+# ============================================================
+# 10. OLS 基本迴歸
+# ============================================================
+
+# 研究假說：
+#
+# 勞動生產力提高
+#       ↓
+# 企業生產效率提高
+#       ↓
+# 勞動需求增加
+#       ↓
+# 薪資成長
+#
+# 模型：
+#
+# Wage Growth = α + β1 Productivity Growth
+#                 + β2 Industrial Growth + ε
+#
+# 預期：
+# β1 > 0
+
+
+# X：解釋變數
+
+X = df[
+    [
+        "Productivity_YoY",
+        "Industrial_YoY"
+    ]
+]
+
+# Y：被解釋變數
+
+Y = df["Wage_YoY"]
+
+
+# 加入截距項
+
+X = sm.add_constant(X)
+
+
+# 建立 OLS 模型
+
+model = sm.OLS(
+    Y,
+    X
+).fit()
+
+
+# 顯示結果
+
+print("\n========== OLS 迴歸結果 ==========")
+
+print(model.summary())
+
+
+# ============================================================
+# 11. ADF 單根檢定
+# ============================================================
+
+def adf_test(series, name):
+    """
+    Augmented Dickey-Fuller 單根檢定
+    """
+
+    result = adfuller(
+        series.dropna()
+    )
+
+    print("\n------------------------------")
+    print("ADF Test:", name)
+    print("------------------------------")
+
+    print("ADF Statistic:", result[0])
+    print("p-value:", result[1])
+
+    if result[1] < 0.05:
+        print("結果：拒絕單根假設，資料可能為定態序列。")
+    else:
+        print("結果：無法拒絕單根假設，資料可能不是定態序列。")
+
+
+# 對主要變數進行檢定
+
+adf_test(
+    df["Productivity_YoY"],
+    "Labor Productivity Growth"
+)
+
+adf_test(
+    df["Wage_YoY"],
+    "Wage Growth"
+)
+
+adf_test(
+    df["Industrial_YoY"],
+    "Industrial Production Growth"
+)
+
+
+# ============================================================
+# 12. 儲存清理後資料
+# ============================================================
+
+OUTPUT_PATH = Path(
+    "../data/processed/clean_aremos_data.csv"
+)
+
+# 建立資料夾
+OUTPUT_PATH.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+# 儲存 CSV
+df.to_csv(
+    OUTPUT_PATH,
+    encoding="utf-8-sig"
+)
+
+print("\n========== 分析完成 ==========")
+
+print(
+    f"清理後資料已儲存至：{OUTPUT_PATH}"
+)
